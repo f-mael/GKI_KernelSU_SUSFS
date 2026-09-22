@@ -298,7 +298,7 @@ jobs:
                     exit 1
                   fi
                 fi
-                printf '{"flavor":"%s","owner":"%s","repo":"%s","source":"run","run_id":%s,"stock":"%s","want":"Manager,Spoofed-Manager"}' \
+                printf '{"flavor":"%s","owner":"%s","repo":"%s","source":"run","run_id":%s,"stock":"%s","want":"Manager,Manager-spoofed"}' \
                   "$flavor" "$owner" "$repo" "$run_id" "$stock"
                 ;;
 
@@ -334,7 +334,7 @@ jobs:
           echo "Root flavor: ${FLAVORS}"
           LIST=""
           case "${FLAVORS}" in
-            All) LIST=$(jq -c -n '[inputs]' <<< "$(resolve_one next)"$'\n'"$(resolve_one next-susfs)"$'\n'"$(resolve_one kernelsu)"$'\n'"$(resolve_one resukisu)") ;;
+            All) LIST=$(jq -c -n '[inputs]' <<< "$(resolve_one next)"$'\n'"$(resolve_one next-susfs)"$'\n'"$(resolve_one kernelsu)"$'\n'"$(resolve_one resukisu)"$'\n'"$(resolve_one sukisu-ultra)") ;;
             KernelSU-Next) LIST=$(jq -c -n '[inputs]' <<< "$(resolve_one next)") ;;
             KernelSU-Next-SUSFS) LIST=$(jq -c -n '[inputs]' <<< "$(resolve_one next-susfs)") ;;
             KernelSU) LIST=$(jq -c -n '[inputs]' <<< "$(resolve_one kernelsu)") ;;
@@ -814,12 +814,12 @@ jobs:
           # This step just prepares — actual spoof run happens in Build step
           if [ -x ./spoof ]; then echo "spoof present"; else echo "no spoof script"; fi
 
-      - name: Randomizer check (ReSukiSU only, like upstream)
-        if: steps.gate.outputs.run == 'true' && matrix.flavor == 'resukisu'
+      - name: Randomizer check (ReSukiSU and SukiSU-Ultra, like upstream)
+        if: steps.gate.outputs.run == 'true' && (matrix.flavor == 'resukisu' || matrix.flavor == 'sukisu-ultra')
         shell: bash
         working-directory: /tmp/${{ matrix.flavor }}-src/manager
         run: |
-          if [ -x ./randomizer ]; then chmod +x ./randomizer; ls -l ./randomizer; else echo "no randomizer"; fi
+          if [ -f ./randomizer ]; then chmod +x ./randomizer; ls -l ./randomizer; else echo "no randomizer"; fi
 
       - name: Build Manager APK(s) — stock gradle, key only
         if: steps.gate.outputs.run == 'true'

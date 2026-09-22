@@ -191,7 +191,7 @@ jobs:
           PIN_NOMOUNT="d0f57d5c37ff02aae2299daded57919153240cb3"
           PIN_KERNELSU="3c1240625655978f319a98398031100b80e9da7c"
           PIN_RESUKISU="3c1882886dbbb54f4aae7ddf205f8ccde32c2a34"
-          PIN_SUKISU_ULTRA="e2912817f4e1b194e582a06e0b5eacf6a3fb7083"
+          PIN_SUKISU_ULTRA="b20dee702035af09cb2ecb5f35443bbc1747f3e6"
           declare -A PIN_SUSFS=(
             [susfs_commit_android12_5_10]="ec785f47d49f7b3871ca9356f450411020af7017"
             [susfs_commit_android13_5_10]="ed3d6d9c9a2652e1c70f153f5358701e996d646c"
@@ -448,7 +448,7 @@ jobs:
                     exit 1
                   fi
                 fi
-                printf '{"flavor":"%s","owner":"%s","repo":"%s","source":"run","run_id":%s,"stock":"%s","want":"Manager,Spoofed-Manager"}' \
+                printf '{"flavor":"%s","owner":"%s","repo":"%s","source":"run","run_id":%s,"stock":"%s","want":"Manager,Manager-spoofed"}' \
                   "$flavor" "$owner" "$repo" "$run_id" "$stock"
                 ;;
               kowsu)
