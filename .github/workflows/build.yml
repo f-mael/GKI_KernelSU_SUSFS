@@ -549,15 +549,6 @@ jobs:
         compression_level: 9
         github_token: ${{ github.token }}
 
-    - name: Build Bypass Kernel
-      if: inputs.build_bypass
-      env:
-        SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
-        KBUILD_BUILD_TIMESTAMP: ${{ env.KBUILD_BUILD_TIMESTAMP }}
-      uses: ./.github/actions/build-kernel
-      with:
-        version: ${{ inputs.version }}
-
     - name: Consolidated Build Summary
       if: always()
       shell: bash
