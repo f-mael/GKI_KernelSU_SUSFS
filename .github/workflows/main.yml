@@ -44,7 +44,7 @@ on:
       brand_name:
         description: "Kernel Branding"
         type: string
-        default: Wild
+        default: GKI
       commit_mode:
         description: "latest = branch tips, verified = audited pins, update = build latest then promote verified pins on success"
         required: false
@@ -1581,7 +1581,7 @@ jobs:
           if env("USE_BPF","true")=="true": feats.append("BTF / eBPF / FUSE-BPF")
           if env("USE_PERF","false")=="true": feats.append("Performance Tuning")
           lines=[]
-          lines.append("# Wild Kernels for GKI2 Devices")
+          lines.append("# GKI KernelSU + SUSFS for GKI2 Devices")
           lines.append("")
           lines.append("## Root")
           lines.append("")

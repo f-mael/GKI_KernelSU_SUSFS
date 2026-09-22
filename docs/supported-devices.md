@@ -36,6 +36,12 @@
 | Pixel 11 Pro XL | kodiak | — | — | Expected |
 | Pixel 11 Pro Fold | yogi | — | — | Expected |
 
+## Xiaomi / POCO
+
+| Device | Codename | GKI Kernel | Firmware | Status |
+|--------|----------|------------|----------|--------|
+| POCO X7 Pro 5G / Redmi Turbo 4 | rodin | android15-6.6 | HyperOS 2 (stock) | Supported |
+
 ## Don't see your device?
 
 > [!NOTE]
