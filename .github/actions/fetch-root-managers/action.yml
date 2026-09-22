@@ -87,8 +87,8 @@ runs:
           fi
         )
         rm -rf manager-dl
-    - name: Print produced manager zips
+    - name: Print produced manager APKs
       shell: bash
       run: |
-        echo "Manager APK zips in ${{ inputs.output_dir }}:"
-        find "${{ inputs.output_dir }}" -maxdepth 1 -type f -iname '*.zip' -printf '%f\n' | sort
+        echo "Manager APKs in ${{ inputs.output_dir }}:"
+        find "${{ inputs.output_dir }}" -maxdepth 1 -type f \( -iname '*.apk' -o -iname '*.zip' \) -printf '%f\n' | sort

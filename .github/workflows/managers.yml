@@ -228,6 +228,15 @@ jobs:
                       run_id=$(echo "$fb" | jq -r '.workflow_runs[0].id // empty')
                       stock=$(echo "$fb" | jq -r '.workflow_runs[0].head_sha // empty')
                     fi
+                    if [[ -z "$run_id" ]]; then
+                      # pershoot fork has no CI runs — fall back to upstream KernelSU-Next dev branch
+                      echo "No CI run on pershoot fork, falling back to upstream KernelSU-Next dev branch" >&2
+                      owner="KernelSU-Next"
+                      repo="KernelSU-Next"
+                      fb=$(gh api "repos/${owner}/${repo}/actions/workflows/${wf}/runs?branch=dev&status=success&per_page=1")
+                      run_id=$(echo "$fb" | jq -r '.workflow_runs[0].id // empty')
+                      stock=$(echo "$fb" | jq -r '.workflow_runs[0].head_sha // empty')
+                    fi
                     if [[ -n "$run_id" ]]; then echo "Fallback to ${stock} run ${run_id}" >&2; fi
                   fi
                   if [[ -z "${run_id}" ]]; then
@@ -903,18 +912,31 @@ jobs:
               return 1
             fi
           }
+          out="/tmp/manager_apks_${flavor}"
+          mkdir -p "$out"
           # Flavor-specific stock commands (mirror upstream files verbatim)
           if [ "$flavor" = "next" ] || [ "$flavor" = "next-susfs" ]; then
             # Upstream Next: ./gradlew clean assembleRelease (+ spoof variant)
             # Build normal
             ok=false
-            if gradle_build "clean assembleRelease"; then ok=true; fi
+            if gradle_build "clean assembleRelease"; then
+              ok=true
+              for apk in app/build/outputs/apk/release/*.apk; do
+                [ -f "$apk" ] || continue
+                cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
+                echo "Collected normal $out/${flavor}-$(basename "$apk")"
+              done
+            fi
             # Spoof variant if present (upstream does matrix spoofed=true/false)
             if [ -x ./spoof ]; then
               echo "Building spoofed variant (upstream match)"
               chmod +x ./spoof; ./spoof || true
               if gradle_build "clean assembleRelease"; then
-                for apk in app/build/outputs/apk/release/*.apk; do [ -f "$apk" ] && cp -f "$apk" "/tmp/next-spoofed.apk" || true; done
+                for apk in app/build/outputs/apk/release/*.apk; do
+                  [ -f "$apk" ] || continue
+                  cp -f "$apk" "$out/${flavor}-spoofed.apk"
+                  echo "Collected spoofed $out/${flavor}-spoofed.apk"
+                done
                 ok=true
               fi
               git checkout -- app/src/main/java 2>/dev/null || git checkout -- . 2>/dev/null || true
@@ -923,49 +945,64 @@ jobs:
           elif [ "$flavor" = "kernelsu" ]; then
             # Upstream tiann: ./gradlew clean assembleRelease (repack is separate job — we just build manager here)
             gradle_build "clean assembleRelease" || gradle_build "assembleRelease" || true
-          elif [ "$flavor" = "kowsu" ]; then
-            # Upstream KowSU is tiann-style: clean assembleRelease
-            gradle_build "clean assembleRelease" || gradle_build "assembleRelease" || true
-          elif [ "$flavor" = "resukisu" ]; then
-            # Upstream ReSukiSU: assembleRelease + randomizer (only universal variants)
-            gradle_build "clean assembleRelease" || true
-            # skip assembleDebug — only release universal and universal spoofed
-            if [ -x ./randomizer ]; then
-              ./randomizer 2>&1 | tail -20 || true
-              gradle_build "clean assembleRelease" || true
-            fi
-          elif [ "$flavor" = "sukisu-ultra" ]; then
-            # Upstream SukiSU-Ultra: clean assembleRelease, spoofed via randomizer
-            gradle_build "clean assembleRelease" || true
-            if [ -x ./randomizer ]; then
-              ./randomizer 2>&1 | tail -20 || true
-              gradle_build "clean assembleRelease" || true
-            fi
-          fi
-          # Collect (only release variants for resukisu)
-          out="/tmp/manager_apks_${flavor}"
-          mkdir -p "$out"
-          if [ "$flavor" = "resukisu" ]; then
             for apk in app/build/outputs/apk/release/*.apk; do
               [ -f "$apk" ] || continue
               cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
               echo "Collected $out/${flavor}-$(basename "$apk")"
             done
-            # Filter resukisu to only universal + not debug (release universal and universal spoofed)
+          elif [ "$flavor" = "kowsu" ]; then
+            # Upstream KowSU is tiann-style: clean assembleRelease
+            gradle_build "clean assembleRelease" || gradle_build "assembleRelease" || true
+            for apk in app/build/outputs/apk/release/*.apk; do
+              [ -f "$apk" ] || continue
+              cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
+              echo "Collected $out/${flavor}-$(basename "$apk")"
+            done
+          elif [ "$flavor" = "resukisu" ]; then
+            # Upstream ReSukiSU: assembleRelease + randomizer (only universal variants)
+            gradle_build "clean assembleRelease" || true
+            for apk in app/build/outputs/apk/release/*.apk; do
+              [ -f "$apk" ] || continue
+              cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
+              echo "Collected normal $out/${flavor}-$(basename "$apk")"
+            done
+            # skip assembleDebug — only release universal and universal spoofed
+            if [ -x ./randomizer ]; then
+              ./randomizer 2>&1 | tail -20 || true
+              gradle_build "clean assembleRelease" || true
+              for apk in app/build/outputs/apk/release/*.apk; do
+                [ -f "$apk" ] || continue
+                cp -f "$apk" "$out/${flavor}-spoofed-$(basename "$apk")"
+                echo "Collected spoofed $out/${flavor}-spoofed-$(basename "$apk")"
+              done
+            fi
+          elif [ "$flavor" = "sukisu-ultra" ]; then
+            # Upstream SukiSU-Ultra: clean assembleRelease, spoofed via randomizer
+            gradle_build "clean assembleRelease" || true
+            for apk in app/build/outputs/apk/release/*.apk; do
+              [ -f "$apk" ] || continue
+              cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
+              echo "Collected normal $out/${flavor}-$(basename "$apk")"
+            done
+            if [ -x ./randomizer ]; then
+              ./randomizer 2>&1 | tail -20 || true
+              gradle_build "clean assembleRelease" || true
+              for apk in app/build/outputs/apk/release/*.apk; do
+                [ -f "$apk" ] || continue
+                cp -f "$apk" "$out/${flavor}-spoofed-$(basename "$apk")"
+                echo "Collected spoofed $out/${flavor}-spoofed-$(basename "$apk")"
+              done
+            fi
+          fi
+          # Filter resukisu to only universal + not debug (release universal and universal spoofed)
+          if [ "$flavor" = "resukisu" ]; then
             for f in "$out"/*.apk; do
               [ -f "$f" ] || continue
               ln=$(basename "$f" | tr '[:upper:]' '[:lower:]')
               if [[ "$ln" != *universal* ]]; then echo "Dropping resukisu non-universal $(basename "$f")" >&2; rm -f "$f"; continue; fi
               if [[ "$ln" == *debug* ]]; then echo "Dropping resukisu debug $(basename "$f")" >&2; rm -f "$f"; continue; fi
             done
-          else
-            for apk in app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk; do
-              [ -f "$apk" ] || continue
-              cp -f "$apk" "$out/${flavor}-$(basename "$apk")"
-              echo "Collected $out/${flavor}-$(basename "$apk")"
-            done
           fi
-          if [ -f /tmp/next-spoofed.apk ]; then cp -f /tmp/next-spoofed.apk "$out/${flavor}-spoofed.apk" || true; fi
           ls -lh "$out" 2>&1 | head -30 || true
           if [ -z "$(ls -A "$out" 2>/dev/null)" ]; then echo "WARNING: no APK produced for $flavor" >&2; fi
           echo "MANAGER_OUT_$flavor=$out" >> "$GITHUB_ENV"
