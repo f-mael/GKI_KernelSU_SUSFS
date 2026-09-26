@@ -93,8 +93,12 @@ jobs:
                            "--depth", "1", "--branch", head, COMMON_URL, tmp],
                           check=True, capture_output=True, timeout=600,
                       )
+                      makefile = os.path.join(tmp, "Makefile")
+                      if not os.path.isfile(makefile):
+                          print(f"WARNING: no Makefile in {head}; skipping")
+                          continue
                       sub = None
-                      with open(os.path.join(tmp, "Makefile")) as f:
+                      with open(makefile) as f:
                           for line in f:
                               if line.startswith("SUBLEVEL ="):
                                   sub = line.split("=", 1)[1].strip()
@@ -107,6 +111,9 @@ jobs:
                       print(f"ADD: {version} {month} (sublevel {sub})")
                   except subprocess.CalledProcessError:
                       print(f"WARNING: could not clone {head}; skipping")
+                      continue
+                  except OSError as e:
+                      print(f"WARNING: error reading Makefile in {head}: {e}; skipping")
                       continue
                   finally:
                       shutil.rmtree(tmp, ignore_errors=True)
